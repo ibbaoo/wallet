@@ -6,7 +6,7 @@ A personal money tracker for iPhone, in Vietnamese dong.
 - Add money and log spending, with photos from the camera or library
 - A calendar showing what you spent each day, and a chart comparing months
 - Everything is stored only on your phone; back up to iCloud Drive from Settings
-- **Scan a screenshot:** send a screenshot of your bank or e-wallet history and Claude proposes entries to add, fix or remove for you to approve (needs your own Claude API key in Settings)
+- **Scan a screenshot:** send a screenshot of your bank or e-wallet history and the AI proposes entries to add, fix or remove for you to approve (needs your own Claude or Gemini API key in Settings)
 
 **Open it:** https://ibbaoo.github.io/wallet/
 

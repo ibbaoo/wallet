@@ -469,9 +469,9 @@ button.grow:active { background: rgba(255,255,255,.06); }
       <div>
         <div class="section-label">AI scan</div>
         <div class="group">
-          <label class="grow"><span>API key</span><input id="apiKeyIn" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-ant-…"></label>
+          <label class="grow"><span>API key</span><input id="apiKeyIn" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Claude or Gemini key"></label>
         </div>
-        <div class="footnote">Paste a Claude API key from platform.claude.com. It stays on this iPhone and is only sent to Anthropic when you scan. Each scan is billed to your API account.</div>
+        <div class="footnote">Paste a Claude key (starts with sk-ant-) from platform.claude.com, or a Gemini key (starts with AIza) from aistudio.google.com. It stays on this iPhone and is only sent to that company when you scan. On Gemini’s free tier, Google may use what you send to improve its products; paid keys aren’t used that way.</div>
       </div>
       <div>
         <div class="section-label">Backup</div>
@@ -1491,22 +1491,16 @@ function aiShowStatus(html) {
   $("#aiBody").innerHTML = `<div class="ai-status">${aiShotsHTML()}${html}</div>`;
 }
 
-async function runAiScan() {
-  const key = lsGet(LS_KEY, "");
-  aiShowStatus('<div class="spinner" role="status" aria-label="Reading"></div><div class="big">Reading your screenshot…</div><div>Claude is matching it with your entries. This can take a little while.</div>');
-  if (aiAbort) aiAbort.abort();
-  const abort = (aiAbort = new AbortController());
+// The key decides the service: Gemini keys start with "AIza", Claude keys with "sk-ant-".
+const aiProvider = (key) => (/^AIza/.test(key) ? "gemini" : "claude");
+const aiName = (key) => (aiProvider(key) === "gemini" ? "Gemini" : "Claude");
+const userError = (message) => Object.assign(new Error(message), { userMessage: message });
+
+async function scanWithClaude(key, images, text, signal) {
   let A = null;
   try {
     A = (await import(SDK_URL)).default;
     const client = new A({ apiKey: key, dangerouslyAllowBrowser: true });
-    const images = [];
-    for (const s of aiShots) {
-      const data = (await blobToDataURL(s.blob)).split(",")[1];
-      images.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data } });
-    }
-    const now = new Date();
-    const text = `Today is ${now.toLocaleDateString("en-US", { weekday: "long" })}, ${dayKey(now)}.\n\n${aiEntriesContext()}\n\nPropose the changes that make the ledger match the screenshot${aiShots.length > 1 ? "s" : ""}.`;
     const response = await client.beta.messages.create({
       model: "claude-opus-5-5",
       max_tokens: 16000,
@@ -1514,17 +1508,73 @@ async function runAiScan() {
       fallbacks: "default",
       output_config: { effort: "medium", format: { type: "json_schema", schema: AI_SCHEMA } },
       system: AI_SYSTEM,
-      messages: [{ role: "user", content: [...images, { type: "text", text }] }],
-    }, { signal: abort.signal });
-    if (abort.signal.aborted) return;
-    if (response.stop_reason === "refusal") throw Object.assign(new Error("refusal"), { userMessage: "Claude couldn’t process this screenshot. Try a different one." });
-    if (response.stop_reason === "max_tokens") throw Object.assign(new Error("max_tokens"), { userMessage: "That was too many transactions at once. Try a shorter screenshot." });
+      messages: [{ role: "user", content: [...images.map((data) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data } })), { type: "text", text }] }],
+    }, { signal });
+    if (response.stop_reason === "refusal") throw userError("Claude couldn’t process this screenshot. Try a different one.");
+    if (response.stop_reason === "max_tokens") throw userError("That was too many transactions at once. Try a shorter screenshot.");
     const block = response.content.find((b) => b.type === "text");
-    const result = JSON.parse(block ? block.text : "");
+    return block ? block.text : "";
+  } catch (err) {
+    if ((err && err.name === "AbortError") || (A && err instanceof A.APIUserAbortError) || (err && err.userMessage)) throw err;
+    throw userError(aiErrorText(err, A));
+  }
+}
+
+// Gemini Interactions API over REST: https://ai.google.dev/gemini-api/docs/interactions
+async function scanWithGemini(key, images, text, signal) {
+  let res;
+  try {
+    res = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+      method: "POST",
+      signal,
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({
+        model: "gemini-3.8-flash",
+        store: false,
+        input: [{ type: "text", text: `${AI_SYSTEM}\n\n${text}` }, ...images.map((data) => ({ type: "image", data, mime_type: "image/jpeg" }))],
+        response_format: { type: "text", mime_type: "application/json", schema: AI_SCHEMA },
+      }),
+    });
+  } catch (err) {
+    if (err && err.name === "AbortError") throw err;
+    throw userError(navigator.onLine ? "Couldn’t reach Gemini. Check your connection and try again." : "You’re offline. Connect to the internet and try again.");
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const e = (Array.isArray(data) ? data[0] && data[0].error : data.error) || {}; // errors can arrive wrapped in a list
+    const badKey = (e.details || []).some((d) => d && d.reason === "API_KEY_INVALID");
+    if (badKey || res.status === 401) throw userError("Your Gemini key wasn’t accepted. Check it in Settings.");
+    if (res.status === 403) throw userError("This Gemini key isn’t allowed to do this. Check it in Settings.");
+    if (res.status === 429) throw userError("Gemini’s usage limit was reached. Free keys have daily limits; try again later.");
+    throw userError(`Gemini returned an error (${res.status})${e.message ? `: ${e.message}` : ""}.`);
+  }
+  if (data.status === "incomplete") throw userError("That was too many transactions at once. Try a shorter screenshot.");
+  if (data.status && data.status !== "completed") throw userError("Gemini couldn’t process this screenshot. Try a different one.");
+  if (typeof data.output_text === "string") return data.output_text;
+  return (data.steps || []).filter((s) => s.type === "model_output")
+    .flatMap((s) => s.content || []).filter((c) => c.type === "text").map((c) => c.text).join("");
+}
+
+async function runAiScan() {
+  const key = lsGet(LS_KEY, "");
+  const name = aiName(key);
+  aiShowStatus(`<div class="spinner" role="status" aria-label="Reading"></div><div class="big">Reading your screenshot…</div><div>${name} is matching it with your entries. This can take a little while.</div>`);
+  if (aiAbort) aiAbort.abort();
+  const abort = (aiAbort = new AbortController());
+  try {
+    const images = [];
+    for (const s of aiShots) images.push((await blobToDataURL(s.blob)).split(",")[1]);
+    const now = new Date();
+    const text = `Today is ${now.toLocaleDateString("en-US", { weekday: "long" })}, ${dayKey(now)}.\n\n${aiEntriesContext()}\n\nPropose the changes that make the ledger match the screenshot${aiShots.length > 1 ? "s" : ""}.`;
+    const scan = aiProvider(key) === "gemini" ? scanWithGemini : scanWithClaude;
+    const answer = await scan(key, images, text, abort.signal);
+    if (abort.signal.aborted) return;
+    let result;
+    try { result = JSON.parse(answer); } catch { throw userError(`${name}’s answer couldn’t be read. Try again.`); }
     aiShowReview(result);
   } catch (err) {
-    if (abort.signal.aborted || (err && err.name === "AbortError") || (A && err instanceof A.APIUserAbortError)) return;
-    const msg = err instanceof SyntaxError ? "Claude’s answer couldn’t be read. Try again." : aiErrorText(err, A);
+    if (abort.signal.aborted || (err && err.name === "AbortError")) return;
+    const msg = (err && err.userMessage) || "Something went wrong. Try again.";
     aiShowStatus(`<div class="big">Scan didn’t finish</div><div>${esc(msg)}</div><button type="button" class="restore press" id="aiRetry">Try again</button>`);
     $("#aiRetry").addEventListener("click", runAiScan);
   } finally {
@@ -1661,7 +1711,7 @@ function aiClearShots() { aiShots.forEach((s) => URL.revokeObjectURL(s.url)); ai
 $("#aiBtn").addEventListener("click", () => {
   if (!lsGet(LS_KEY, "")) {
     openSheet($("#settingsSheet"));
-    toast("Add your Claude API key first");
+    toast("Add a Claude or Gemini API key first");
     setTimeout(() => $("#apiKeyIn").focus({ preventScroll: true }), 450);
     return;
   }
@@ -1685,7 +1735,10 @@ $("#aiApply").addEventListener("click", applyAi);
 $("#apiKeyIn").value = lsGet(LS_KEY, "");
 $("#apiKeyIn").addEventListener("change", () => {
   const v = $("#apiKeyIn").value.trim();
-  if (v) { lsSet(LS_KEY, v); toast("API key saved"); }
+  if (v) {
+    lsSet(LS_KEY, v);
+    toast(/^AIza|^sk-ant-/.test(v) ? `${aiName(v)} key saved` : "Saved, but this doesn’t look like a Claude or Gemini key");
+  }
   else { try { localStorage.removeItem(LS_KEY); } catch {} toast("API key removed"); }
 });
 
