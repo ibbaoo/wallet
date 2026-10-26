@@ -114,6 +114,7 @@ body.sheeted .navbar { opacity: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .ai-status { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 28px 8px; text-align: center; color: var(--label2); font-size: 15px; line-height: 1.45; }
 .ai-status .big { color: var(--label); font-size: 17px; font-weight: 600; }
+.ai-status .elapsed { font-size: 13px; color: var(--label3); }
 .ai-shots { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .ai-shots img { width: 60px; height: 90px; object-fit: cover; border-radius: 8px; background: var(--bg3); }
 .ai-summary { font-size: 15px; color: var(--label2); line-height: 1.45; padding: 0 4px; }
@@ -1408,6 +1409,7 @@ async function importBackup(file) {
 /* ---------- AI scan: Claude reads spending screenshots and proposes changes ---------- */
 const LS_KEY = "wallet.apiKey";
 const SDK_URL = "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.133.0/+esm";
+const AI_TIME_LIMIT = 120000; // stop a scan that hasn't answered in 2 minutes
 const ICON_TICK = '<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
 const AI_SCHEMA = {
   type: "object",
@@ -1507,7 +1509,7 @@ async function scanWithClaude(key, images, text, signal) {
       max_tokens: 16000,
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
-      output_config: { effort: "medium", format: { type: "json_schema", schema: AI_SCHEMA } },
+      output_config: { effort: "low", format: { type: "json_schema", schema: AI_SCHEMA } },
       system: AI_SYSTEM,
       messages: [{ role: "user", content: [...images.map((data) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data } })), { type: "text", text }] }],
     }, { signal });
@@ -1532,6 +1534,7 @@ async function scanWithGemini(key, images, text, signal) {
       body: JSON.stringify({
         model: "gemini-3.8-flash",
         store: false,
+        generation_config: { thinking_level: "low" }, // reading a transaction list needs little reasoning; default "medium" is slower
         input: [{ type: "text", text: `${AI_SYSTEM}\n\n${text}` }, ...images.map((data) => ({ type: "image", data, mime_type: "image/jpeg" }))],
         response_format: { type: "text", mime_type: "application/json", schema: AI_SCHEMA },
       }),
@@ -1559,9 +1562,16 @@ async function scanWithGemini(key, images, text, signal) {
 async function runAiScan() {
   const key = lsGet(LS_KEY, "");
   const name = aiName(key);
-  aiShowStatus(`<div class="spinner" role="status" aria-label="Reading"></div><div class="big">Reading your screenshot…</div><div>${name} is matching it with your entries. This can take a little while.</div>`);
+  aiShowStatus(`<div class="spinner" role="status" aria-label="Reading"></div><div class="big">Reading your screenshot…</div><div>${name} is matching it with your entries.</div><div class="elapsed" id="aiElapsed">0s</div>`);
   if (aiAbort) aiAbort.abort();
   const abort = (aiAbort = new AbortController());
+  const started = Date.now();
+  let timedOut = false;
+  const limit = setTimeout(() => { timedOut = true; abort.abort(); }, AI_TIME_LIMIT);
+  const tick = setInterval(() => {
+    const el = $("#aiElapsed");
+    if (el) el.textContent = `${Math.round((Date.now() - started) / 1000)}s`;
+  }, 1000);
   try {
     const images = [];
     for (const s of aiShots) images.push((await blobToDataURL(s.blob)).split(",")[1]);
@@ -1574,11 +1584,15 @@ async function runAiScan() {
     try { result = JSON.parse(answer); } catch { throw userError(`${name}’s answer couldn’t be read. Try again.`); }
     aiShowReview(result);
   } catch (err) {
-    if (abort.signal.aborted || (err && err.name === "AbortError")) return;
-    const msg = (err && err.userMessage) || "Something went wrong. Try again.";
+    if (!timedOut && (abort.signal.aborted || (err && err.name === "AbortError"))) return;
+    const msg = timedOut
+      ? `${name} took longer than ${AI_TIME_LIMIT / 60000} minutes, so the scan was stopped. Try again, or crop the screenshot to fewer transactions.`
+      : (err && err.userMessage) || "Something went wrong. Try again.";
     aiShowStatus(`<div class="big">Scan didn’t finish</div><div>${esc(msg)}</div><button type="button" class="restore press" id="aiRetry">Try again</button>`);
     $("#aiRetry").addEventListener("click", runAiScan);
   } finally {
+    clearTimeout(limit);
+    clearInterval(tick);
     if (aiAbort === abort) aiAbort = null;
   }
 }
