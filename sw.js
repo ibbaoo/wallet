@@ -1,6 +1,6 @@
 // Keeps the app working offline. Serves the cached copy right away and
 // refreshes it in the background, so a new upload shows on the next launch.
-const CACHE = "wallet-v3";
+const CACHE = "wallet-v4";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
