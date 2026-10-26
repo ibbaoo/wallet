@@ -1708,7 +1708,15 @@ $("#apiKeyIn").addEventListener("change", () => {
   }, 1000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { renderClock(); render(); } });
   startLocal();
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+  if ("serviceWorker" in navigator) {
+    // when a newer version takes over, reload once so it shows right away
+    const hadWorker = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (hadWorker && !reloaded && !stack.length) { reloaded = true; location.reload(); }
+    });
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
 })();
 </script>
 </body>
