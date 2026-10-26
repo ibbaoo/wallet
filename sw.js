@@ -2,7 +2,7 @@
 // refreshes it in the background, so a new upload shows on the next launch.
 // Every network fetch skips the browser's HTTP cache (GitHub Pages lets it keep
 // files for 10 minutes), so a new version is never replaced by an old copy.
-const CACHE = "wallet-v6";
+const CACHE = "wallet-v7";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {

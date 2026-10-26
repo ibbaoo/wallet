@@ -471,7 +471,7 @@ button.grow:active { background: rgba(255,255,255,.06); }
         <div class="group">
           <label class="grow"><span>API key</span><input id="apiKeyIn" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Claude or Gemini key"></label>
         </div>
-        <div class="footnote">Paste a Claude key (starts with sk-ant-) from platform.claude.com, or a Gemini key (starts with AIza) from aistudio.google.com. It stays on this iPhone and is only sent to that company when you scan. On Gemini’s free tier, Google may use what you send to improve its products; paid keys aren’t used that way.</div>
+        <div class="footnote">Paste a Claude key (starts with sk-ant-) from platform.claude.com, or a Gemini key (starts with AQ. or AIza) from aistudio.google.com. It stays on this iPhone and is only sent to that company when you scan. On Gemini’s free tier, Google may use what you send to improve its products; paid keys aren’t used that way.</div>
       </div>
       <div>
         <div class="section-label">Backup</div>
@@ -1491,8 +1491,9 @@ function aiShowStatus(html) {
   $("#aiBody").innerHTML = `<div class="ai-status">${aiShotsHTML()}${html}</div>`;
 }
 
-// The key decides the service: Gemini keys start with "AIza", Claude keys with "sk-ant-".
-const aiProvider = (key) => (/^AIza/.test(key) ? "gemini" : "claude");
+// The key decides the service: Claude keys start with "sk-ant-"; anything else is a
+// Gemini key (older ones start with "AIza", newer auth keys with "AQ.").
+const aiProvider = (key) => (/^sk-ant-/.test(key) ? "claude" : "gemini");
 const aiName = (key) => (aiProvider(key) === "gemini" ? "Gemini" : "Claude");
 const userError = (message) => Object.assign(new Error(message), { userMessage: message });
 
@@ -1543,7 +1544,7 @@ async function scanWithGemini(key, images, text, signal) {
   if (!res.ok) {
     const e = (Array.isArray(data) ? data[0] && data[0].error : data.error) || {}; // errors can arrive wrapped in a list
     const badKey = (e.details || []).some((d) => d && d.reason === "API_KEY_INVALID");
-    if (badKey || res.status === 401) throw userError("Your Gemini key wasn’t accepted. Check it in Settings.");
+    if (badKey || res.status === 401) throw userError("Google didn’t accept this Gemini key. Check that you pasted all of it in Settings, or create a new key in AI Studio.");
     if (res.status === 403) throw userError("This Gemini key isn’t allowed to do this. Check it in Settings.");
     if (res.status === 429) throw userError("Gemini’s usage limit was reached. Free keys have daily limits; try again later.");
     throw userError(`Gemini returned an error (${res.status})${e.message ? `: ${e.message}` : ""}.`);
@@ -1737,7 +1738,7 @@ $("#apiKeyIn").addEventListener("change", () => {
   const v = $("#apiKeyIn").value.trim();
   if (v) {
     lsSet(LS_KEY, v);
-    toast(/^AIza|^sk-ant-/.test(v) ? `${aiName(v)} key saved` : "Saved, but this doesn’t look like a Claude or Gemini key");
+    toast(/^(AIza|AQ\.|sk-ant-)/.test(v) ? `${aiName(v)} key saved` : "Saved as a Gemini key, but it doesn’t look like one");
   }
   else { try { localStorage.removeItem(LS_KEY); } catch {} toast("API key removed"); }
 });
