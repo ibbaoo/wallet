@@ -107,35 +107,13 @@ body.sheeted .navbar { opacity: 0; }
 .nudge .go { color: var(--label3); font-size: 22px; line-height: 1; }
 .restore { margin-top: 14px; height: 40px; padding: 0 18px; border-radius: 20px; background: var(--bg3); color: var(--label); font-size: 15px; font-weight: 600; }
 
-/* AI scan */
-.pill.ai { grid-column: 1 / -1; background: var(--bg2); color: var(--label); }
-.pill.ai svg { width: 18px; height: 18px; color: #c4a7ff; }
-.spinner { width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--bg3); border-top-color: var(--label); animation: spin .9s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.ai-status { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 28px 8px; text-align: center; color: var(--label2); font-size: 15px; line-height: 1.45; }
-.ai-status .big { color: var(--label); font-size: 17px; font-weight: 600; }
-.ai-status .elapsed { font-size: 13px; color: var(--label3); }
-.ai-shots { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-.ai-shots img { width: 60px; height: 90px; object-fit: cover; border-radius: 8px; background: var(--bg3); }
-.ai-summary { font-size: 15px; color: var(--label2); line-height: 1.45; padding: 0 4px; }
-.change { position: relative; display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 16px; width: 100%; text-align: left; transition: background-color .15s; }
-.change:active { background: rgba(255,255,255,.06); }
-.change + .change::before { content: ""; position: absolute; top: 0; right: 0; left: 52px; height: .5px; background: var(--sep); }
-.tick { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--label3); display: grid; place-items: center; margin-top: 1px; transition: background-color .2s, border-color .2s; }
-.tick svg { width: 12px; height: 12px; color: #000; opacity: 0; transform: scale(.5); transition: opacity .2s, transform .35s var(--spring); }
-[aria-checked="true"] > .tick { background: var(--label); border-color: var(--label); }
-[aria-checked="true"] > .tick svg { opacity: 1; transform: none; }
-.tag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 6px; border-radius: 5px; margin-right: 6px; vertical-align: 1px; }
-.tag.add { background: rgba(48, 209, 88, .16); color: var(--green); }
-.tag.fix { background: rgba(255, 214, 10, .16); color: #ffd60a; }
-.tag.del { background: rgba(255, 69, 58, .16); color: var(--red); }
-.change .t { font-size: 16px; font-weight: 500; overflow-wrap: anywhere; }
-.change .s { font-size: 13px; color: var(--label2); margin-top: 2px; }
-.change .was { font-size: 13px; color: var(--label3); margin-top: 2px; }
-.change .was s { text-decoration-thickness: 1px; }
-.change .why { font-size: 13px; color: var(--label2); margin-top: 4px; }
-.change .a { font-size: 16px; font-weight: 600; white-space: nowrap; }
-.opt-row { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; align-items: center; min-height: 48px; padding: 0 16px; width: 100%; text-align: left; }
+/* drop a photo anywhere to log a spend */
+.drop-zone { position: fixed; inset: 0; z-index: 95; display: grid; place-items: center; padding: calc(env(safe-area-inset-top, 0px) + 24px) 24px calc(env(safe-area-inset-bottom, 0px) + 24px); background: rgba(0, 0, 0, .55); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); opacity: 0; transition: opacity .2s; pointer-events: none; }
+.drop-zone.show { opacity: 1; }
+.drop-card { width: 100%; max-width: 420px; padding: 48px 24px; border: 2px dashed rgba(255, 255, 255, .45); border-radius: 26px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; font-size: 20px; font-weight: 600; transform: scale(.94); transition: transform .45s var(--spring); }
+.drop-zone.show .drop-card { transform: none; }
+.drop-card svg { width: 46px; height: 46px; color: var(--label2); margin-bottom: 4px; }
+.drop-card small { font-size: 15px; font-weight: 400; color: var(--label2); }
 
 /* calendar */
 .cal { display: flex; flex-direction: column; gap: 12px; }
@@ -264,7 +242,6 @@ button.grow:active { background: rgba(255,255,255,.06); }
 .grow.icon-row { justify-content: flex-start; }
 .grow.icon-row svg { width: 20px; height: 20px; color: var(--label2); }
 .grow input[type="text"], .grow input:not([type]) { flex: 1; min-width: 0; border: 0; background: transparent; padding: 12px 0; font-size: 17px; }
-.grow input[type="password"] { flex: 1; min-width: 0; border: 0; background: transparent; padding: 12px 0; font-size: 17px; text-align: right; }
 .grow input:focus { outline: none; }
 .grow input::placeholder { color: var(--label3); }
 .grow input[type="datetime-local"] { border: 0; background: rgba(118,118,128,.24); border-radius: 8px; padding: 6px 10px; font-size: 16px; min-width: 0; max-width: 62%; }
@@ -341,7 +318,6 @@ button.grow:active { background: rgba(255,255,255,.06); }
       <div class="actions">
         <button class="pill in press" id="addInBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add money</button>
         <button class="pill out press" id="addOutBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg>Spend</button>
-        <button class="pill ai press" id="aiBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 2.5l1.7 4.6a3 3 0 0 0 1.8 1.8L18 10.5l-4.5 1.6a3 3 0 0 0-1.8 1.8L10 18.5l-1.7-4.6a3 3 0 0 0-1.8-1.8L2 10.5l4.5-1.6a3 3 0 0 0 1.8-1.8z"/><path d="M18.5 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg>Scan a screenshot</button>
       </div>
     </header>
 
@@ -394,7 +370,6 @@ button.grow:active { background: rgba(255,255,255,.06); }
 <input type="file" id="camIn" accept="image/*" capture="environment" hidden>
 <input type="file" id="libIn" accept="image/*" multiple hidden>
 <input type="file" id="importIn" accept="application/json,.json" hidden>
-<input type="file" id="aiIn" accept="image/*" multiple hidden>
 
 <div class="sheet" id="entrySheet" hidden>
   <div class="scrim" data-close></div>
@@ -468,13 +443,6 @@ button.grow:active { background: rgba(255,255,255,.06); }
     </div>
     <div class="panel-body">
       <div>
-        <div class="section-label">AI scan</div>
-        <div class="group">
-          <label class="grow"><span>API key</span><input id="apiKeyIn" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Claude or Gemini key"></label>
-        </div>
-        <div class="footnote">Paste a Claude key (starts with sk-ant-) from platform.claude.com, or a Gemini key (starts with AQ. or AIza) from aistudio.google.com. It stays on this iPhone and is only sent to that company when you scan. On Gemini’s free tier, Google may use what you send to improve its products; paid keys aren’t used that way.</div>
-      </div>
-      <div>
         <div class="section-label">Backup</div>
         <div class="group">
           <div class="grow"><span>Last backup</span><span id="lastBackup" style="color:var(--label2)">Never</span></div>
@@ -487,25 +455,17 @@ button.grow:active { background: rgba(255,255,255,.06); }
   </div>
 </div>
 
-<div class="sheet" id="aiSheet" hidden>
-  <div class="scrim" data-close></div>
-  <div class="panel tall">
-    <div class="handle">
-      <div class="grab"></div>
-      <div class="sheet-nav">
-        <button type="button" class="nav-btn" data-close>Cancel</button>
-        <h3>AI Scan</h3>
-        <button type="button" class="nav-btn end" id="aiApply" disabled>Apply</button>
-      </div>
-    </div>
-    <div class="panel-body" id="aiBody"></div>
-  </div>
-</div>
-
 <div class="viewer" id="viewer" hidden>
   <div class="bg"></div>
   <img id="viewerImg" alt="Attached photo">
   <button class="close" id="viewerClose" aria-label="Close photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+</div>
+<div class="drop-zone" id="dropZone" hidden aria-hidden="true">
+  <div class="drop-card">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+    Drop to log a spend
+    <small>The photo is attached to a new spend</small>
+  </div>
 </div>
 <div class="toast" id="toast" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span id="toastText"></span></div>
 
@@ -871,7 +831,6 @@ function closeSheet(el) {
     el.hidden = true;
     if (el.id === "daySheet") state.openDay = null;
     if (el.id === "entrySheet") clearPending();
-    if (el.id === "aiSheet") { if (aiAbort) aiAbort.abort(); aiClearShots(); }
   }, 520);
 }
 document.querySelectorAll(".sheet").forEach((s) => {
@@ -1306,17 +1265,11 @@ async function addEntry(e) {
   markChanged();
 }
 
-async function updateEntry(entry) {
-  if (idb) await idbDo("entries", "readwrite", (s) => s.put(entry));
-  state.entries = state.entries.map((x) => (x.id === entry.id ? entry : x));
-  markChanged();
-}
-
 async function removeEntry(e) {
   if (idb) {
     await idbDo("entries", "readwrite", (s) => s.delete(e.id));
     for (const p of e.photos || []) {
-      if (state.entries.some((x) => x.id !== e.id && (x.photos || []).includes(p))) continue; // a scan's screenshot can be shared
+      if (state.entries.some((x) => x.id !== e.id && (x.photos || []).includes(p))) continue; // a photo can be shared between entries
       idbDo("photos", "readwrite", (s) => s.delete(p)).catch(() => {});
       if (photoURLs.has(p)) { URL.revokeObjectURL(photoURLs.get(p)); photoURLs.delete(p); }
     }
@@ -1406,356 +1359,32 @@ async function importBackup(file) {
   else toast("Nothing new to import");
 }
 
-/* ---------- AI scan: Claude reads spending screenshots and proposes changes ---------- */
-const LS_KEY = "wallet.apiKey";
-const SDK_URL = "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.133.0/+esm";
-const AI_TIME_LIMIT = 120000; // stop a scan that hasn't answered in 2 minutes
-const ICON_TICK = '<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
-const AI_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["summary", "unchanged", "changes"],
-  properties: {
-    summary: { type: "string" },
-    unchanged: { type: "integer" },
-    changes: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["action", "entry_id", "type", "amount_vnd", "date", "time", "note", "reason"],
-        properties: {
-          action: { type: "string", enum: ["add", "update", "delete"] },
-          entry_id: { type: "string" },
-          type: { type: "string", enum: ["in", "out"] },
-          amount_vnd: { type: "integer" },
-          date: { type: "string", format: "date" },
-          time: { type: "string" },
-          note: { type: "string" },
-          reason: { type: "string" },
-        },
-      },
-    },
-  },
-};
-const AI_SYSTEM = `You keep a personal money ledger in sync with screenshots the owner sends: banking apps, e-wallets (MoMo, ZaloPay, ShopeePay), card statements or receipts. All money is Vietnamese dong (VND).
-
-Read every completed transaction in the screenshots, then compare them with the existing ledger entries you are given and propose changes:
-- "add": a transaction in the screenshot with no matching entry. Leave entry_id empty.
-- "update": an existing entry that is clearly the same transaction (same or neighbouring day, similar description or amount) but has a wrong amount, date, time, direction or note. Set entry_id and give the corrected values for every field.
-- "delete": only an existing entry that duplicates another entry or a screenshot transaction that is already matched. Never delete an entry just because it is not in the screenshot; screenshots show only part of the history. Copy the entry's current values.
-
-Rules:
-- amount_vnd is a positive whole number of dong. "50.000đ", "50,000 VND", "-50.000" and "50K" all mean 50000.
-- type is "out" for payments, purchases, fees and money sent; "in" for money received, salary, refunds and top-ups from someone else.
-- Skip pending, failed or cancelled transactions, balance lines and transfers between the owner's own accounts.
-- If the screenshot has no year, use the most recent date that is not in the future. Dates are YYYY-MM-DD. time is HH:MM in 24-hour time, or "" if not shown.
-- note is a short description (at most 60 characters) in the screenshot's own language, such as the merchant or the transfer message.
-- reason is one short English sentence telling the owner why you propose the change.
-- unchanged counts screenshot transactions that already match an entry exactly.
-- summary is one or two short English sentences describing what you found.
-- If the images contain no transactions, return no changes and say so in the summary.`;
-
-let aiShots = [];      // {blob, url} screenshots for the current scan
-let aiChanges = [];    // proposals, each with .on (ticked) and .entry (existing entry, for update/delete)
-let aiAttach = true;   // attach the screenshot to added entries
-let aiAbort = null;
-
-function aiEntriesContext() {
-  const since = Date.now() - 120 * 864e5;
-  const recent = state.entries.filter((e) => e.ts >= since).sort((a, b) => b.ts - a.ts).slice(0, 400);
-  if (!recent.length) return "The ledger has no entries in the last 120 days.";
-  const lines = recent.map((e) => {
-    const d = new Date(e.ts);
-    return JSON.stringify({ id: e.id, type: e.type, amount_vnd: Math.round(e.amount / 100), date: dayKey(d), time: `${pad(d.getHours())}:${pad(d.getMinutes())}`, note: e.note || "" });
-  });
-  return `Existing ledger entries from the last 120 days, newest first:\n${lines.join("\n")}`;
-}
-
-function aiErrorText(err, A) {
-  if (!navigator.onLine) return "You’re offline. Connect to the internet and try again.";
-  if (A && err instanceof A.AuthenticationError) return "Your API key wasn’t accepted. Check it in Settings.";
-  if (A && err instanceof A.PermissionDeniedError) return "This API key isn’t allowed to do this. Check it in Settings.";
-  if (A && err instanceof A.RateLimitError) return "Too many requests right now. Wait a minute and try again.";
-  if (A && err instanceof A.BadRequestError) return `Claude couldn’t take this request: ${err.message}`;
-  if (A && err instanceof A.APIConnectionError) return "Couldn’t reach Claude. Check your connection and try again.";
-  if (A && err instanceof A.APIError) return `Claude returned an error (${err.status}). Try again in a moment.`;
-  return (err && err.userMessage) || "Couldn’t load the AI tools. Check your connection and try again.";
-}
-
-function aiShotsHTML() {
-  return `<div class="ai-shots">${aiShots.map((s, i) => `<img src="${s.url}" alt="Screenshot ${i + 1}">`).join("")}</div>`;
-}
-
-function aiShowStatus(html) {
-  $("#aiApply").disabled = true;
-  $("#aiApply").textContent = "Apply";
-  $("#aiBody").innerHTML = `<div class="ai-status">${aiShotsHTML()}${html}</div>`;
-}
-
-// The key decides the service: Claude keys start with "sk-ant-"; anything else is a
-// Gemini key (older ones start with "AIza", newer auth keys with "AQ.").
-const aiProvider = (key) => (/^sk-ant-/.test(key) ? "claude" : "gemini");
-const aiName = (key) => (aiProvider(key) === "gemini" ? "Gemini" : "Claude");
-const userError = (message) => Object.assign(new Error(message), { userMessage: message });
-
-async function scanWithClaude(key, images, text, signal) {
-  let A = null;
-  try {
-    A = (await import(SDK_URL)).default;
-    const client = new A({ apiKey: key, dangerouslyAllowBrowser: true });
-    const response = await client.beta.messages.create({
-      model: "claude-opus-5-5",
-      max_tokens: 16000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: { effort: "low", format: { type: "json_schema", schema: AI_SCHEMA } },
-      system: AI_SYSTEM,
-      messages: [{ role: "user", content: [...images.map((data) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data } })), { type: "text", text }] }],
-    }, { signal });
-    if (response.stop_reason === "refusal") throw userError("Claude couldn’t process this screenshot. Try a different one.");
-    if (response.stop_reason === "max_tokens") throw userError("That was too many transactions at once. Try a shorter screenshot.");
-    const block = response.content.find((b) => b.type === "text");
-    return block ? block.text : "";
-  } catch (err) {
-    if ((err && err.name === "AbortError") || (A && err instanceof A.APIUserAbortError) || (err && err.userMessage)) throw err;
-    throw userError(aiErrorText(err, A));
-  }
-}
-
-// Gemini Interactions API over REST: https://ai.google.dev/gemini-api/docs/interactions
-async function scanWithGemini(key, images, text, signal) {
-  let res;
-  try {
-    res = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
-      method: "POST",
-      signal,
-      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({
-        model: "gemini-3.8-flash",
-        store: false,
-        generation_config: { thinking_level: "low" }, // reading a transaction list needs little reasoning; default "medium" is slower
-        input: [{ type: "text", text: `${AI_SYSTEM}\n\n${text}` }, ...images.map((data) => ({ type: "image", data, mime_type: "image/jpeg" }))],
-        response_format: { type: "text", mime_type: "application/json", schema: AI_SCHEMA },
-      }),
-    });
-  } catch (err) {
-    if (err && err.name === "AbortError") throw err;
-    throw userError(navigator.onLine ? "Couldn’t reach Gemini. Check your connection and try again." : "You’re offline. Connect to the internet and try again.");
-  }
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const e = (Array.isArray(data) ? data[0] && data[0].error : data.error) || {}; // errors can arrive wrapped in a list
-    const badKey = (e.details || []).some((d) => d && d.reason === "API_KEY_INVALID");
-    if (badKey || res.status === 401) throw userError("Google didn’t accept this Gemini key. Check that you pasted all of it in Settings, or create a new key in AI Studio.");
-    if (res.status === 403) throw userError("This Gemini key isn’t allowed to do this. Check it in Settings.");
-    if (res.status === 429) throw userError("Gemini’s usage limit was reached. Free keys have daily limits; try again later.");
-    throw userError(`Gemini returned an error (${res.status})${e.message ? `: ${e.message}` : ""}.`);
-  }
-  if (data.status === "incomplete") throw userError("That was too many transactions at once. Try a shorter screenshot.");
-  if (data.status && data.status !== "completed") throw userError("Gemini couldn’t process this screenshot. Try a different one.");
-  if (typeof data.output_text === "string") return data.output_text;
-  return (data.steps || []).filter((s) => s.type === "model_output")
-    .flatMap((s) => s.content || []).filter((c) => c.type === "text").map((c) => c.text).join("");
-}
-
-async function runAiScan() {
-  const key = lsGet(LS_KEY, "");
-  const name = aiName(key);
-  aiShowStatus(`<div class="spinner" role="status" aria-label="Reading"></div><div class="big">Reading your screenshot…</div><div>${name} is matching it with your entries.</div><div class="elapsed" id="aiElapsed">0s</div>`);
-  if (aiAbort) aiAbort.abort();
-  const abort = (aiAbort = new AbortController());
-  const started = Date.now();
-  let timedOut = false;
-  const limit = setTimeout(() => { timedOut = true; abort.abort(); }, AI_TIME_LIMIT);
-  const tick = setInterval(() => {
-    const el = $("#aiElapsed");
-    if (el) el.textContent = `${Math.round((Date.now() - started) / 1000)}s`;
-  }, 1000);
-  try {
-    const images = [];
-    for (const s of aiShots) images.push((await blobToDataURL(s.blob)).split(",")[1]);
-    const now = new Date();
-    const text = `Today is ${now.toLocaleDateString("en-US", { weekday: "long" })}, ${dayKey(now)}.\n\n${aiEntriesContext()}\n\nPropose the changes that make the ledger match the screenshot${aiShots.length > 1 ? "s" : ""}.`;
-    const scan = aiProvider(key) === "gemini" ? scanWithGemini : scanWithClaude;
-    const answer = await scan(key, images, text, abort.signal);
-    if (abort.signal.aborted) return;
-    let result;
-    try { result = JSON.parse(answer); } catch { throw userError(`${name}’s answer couldn’t be read. Try again.`); }
-    aiShowReview(result);
-  } catch (err) {
-    if (!timedOut && (abort.signal.aborted || (err && err.name === "AbortError"))) return;
-    const msg = timedOut
-      ? `${name} took longer than ${AI_TIME_LIMIT / 60000} minutes, so the scan was stopped. Try again, or crop the screenshot to fewer transactions.`
-      : (err && err.userMessage) || "Something went wrong. Try again.";
-    aiShowStatus(`<div class="big">Scan didn’t finish</div><div>${esc(msg)}</div><button type="button" class="restore press" id="aiRetry">Try again</button>`);
-    $("#aiRetry").addEventListener("click", runAiScan);
-  } finally {
-    clearTimeout(limit);
-    clearInterval(tick);
-    if (aiAbort === abort) aiAbort = null;
-  }
-}
-
-// keep only proposals that are complete and point at real entries
-function aiValidChanges(list) {
-  const byId = new Map(state.entries.map((e) => [e.id, e]));
-  const out = [];
-  for (const c of list || []) {
-    if (!c || !["add", "update", "delete"].includes(c.action) || !["in", "out"].includes(c.type)) continue;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(c.date) || isNaN(keyToDate(c.date))) continue;
-    if (c.action !== "delete" && !(c.amount_vnd > 0)) continue;
-    const entry = c.action === "add" ? null : byId.get(c.entry_id);
-    if (c.action !== "add" && !entry) continue;
-    if (c.action === "update") {
-      const d = new Date(entry.ts);
-      const same = Math.round(entry.amount / 100) === c.amount_vnd && entry.type === c.type && dayKey(d) === c.date
-        && (!c.time || `${pad(d.getHours())}:${pad(d.getMinutes())}` === c.time) && (entry.note || "") === String(c.note || "");
-      if (same) continue;
-    }
-    out.push({ ...c, note: String(c.note || "").slice(0, 120), time: /^\d{2}:\d{2}$/.test(c.time) ? c.time : "", entry, on: c.action !== "delete" });
-  }
-  return out;
-}
-
-function aiWhen(date, time) {
-  const label = keyToDate(date).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
-  if (!time) return label;
-  const [h, m] = time.split(":").map(Number);
-  const t = new Date(); t.setHours(h, m, 0, 0);
-  return `${label}, ${fmtTime(t.getTime())}`;
-}
-
-function aiChangeHTML(c) {
-  const sign = c.type === "in" ? "+" : "−";
-  const tag = { add: '<span class="tag add">Add</span>', update: '<span class="tag fix">Fix</span>', delete: '<span class="tag del">Remove</span>' }[c.action];
-  let was = "";
-  if (c.action === "update") {
-    const e = c.entry, d = new Date(e.ts), diffs = [];
-    if (Math.round(e.amount / 100) !== c.amount_vnd || e.type !== c.type) diffs.push(`${e.type === "in" ? "+" : "−"}${money(e.amount)}`);
-    if (dayKey(d) !== c.date || (c.time && `${pad(d.getHours())}:${pad(d.getMinutes())}` !== c.time)) diffs.push(aiWhen(dayKey(d), `${pad(d.getHours())}:${pad(d.getMinutes())}`));
-    if ((e.note || "") !== c.note) diffs.push(esc(e.note || "No note"));
-    if (diffs.length) was = `<div class="was">Was <s>${diffs.join(" · ")}</s></div>`;
-  }
-  return `${ICON_TICK}<span style="min-width:0"><div class="t">${tag}${esc(c.note || (c.type === "in" ? "Money added" : "Spending"))}</div>
-    <div class="s">${aiWhen(c.date, c.time)}</div>${was}<div class="why">${esc(c.reason || "")}</div></span>
-    <span class="a ${c.type === "in" ? "g" : ""}">${sign}${money(c.amount_vnd * 100)}</span>`;
-}
-
-function aiUpdateApply() {
-  const n = aiChanges.filter((c) => c.on).length;
-  $("#aiApply").disabled = !n;
-  $("#aiApply").textContent = n ? `Apply ${n}` : "Apply";
-}
-
-function aiShowReview(result) {
-  aiChanges = aiValidChanges(result.changes);
-  const body = $("#aiBody");
-  const unchanged = result.unchanged > 0 ? ` ${result.unchanged} already match${result.unchanged === 1 ? "es" : ""} your entries.` : "";
-  body.innerHTML = `${aiShotsHTML()}<div class="ai-summary">${esc(result.summary || "")}${unchanged}</div>`;
-  if (!aiChanges.length) {
-    body.insertAdjacentHTML("beforeend", '<div class="group"><div class="empty">Nothing to change. Your entries already match this screenshot.</div></div>');
-    aiUpdateApply();
-    return;
-  }
-  const list = document.createElement("div");
-  list.className = "group stagger";
-  aiChanges.forEach((c, i) => {
-    const row = document.createElement("button");
-    row.type = "button";
-    row.className = "change";
-    row.style.setProperty("--i", i);
-    row.setAttribute("role", "checkbox");
-    row.setAttribute("aria-checked", String(c.on));
-    row.innerHTML = aiChangeHTML(c);
-    row.addEventListener("click", () => { c.on = !c.on; row.setAttribute("aria-checked", String(c.on)); haptic(); aiUpdateApply(); });
-    list.appendChild(row);
-  });
-  const wrap = document.createElement("div");
-  wrap.append(list);
-  wrap.insertAdjacentHTML("beforeend", '<div class="footnote">Untick anything you don’t want. Removals start unticked.</div>');
-  body.appendChild(wrap);
-  if (aiChanges.some((c) => c.action === "add")) {
-    const opt = document.createElement("div");
-    opt.className = "group";
-    opt.innerHTML = `<button type="button" class="opt-row" role="checkbox" aria-checked="${aiAttach}">${ICON_TICK}<span>Attach the screenshot to new entries</span></button>`;
-    const btn = opt.querySelector("button");
-    btn.addEventListener("click", () => { aiAttach = !aiAttach; btn.setAttribute("aria-checked", String(aiAttach)); });
-    body.appendChild(opt);
-  }
-  aiUpdateApply();
-}
-
-function aiTs(date, time, keepFrom) {
-  const d = keyToDate(date);
-  if (time) { const [h, m] = time.split(":").map(Number); d.setHours(h, m); }
-  else if (keepFrom) { const k = new Date(keepFrom); d.setHours(k.getHours(), k.getMinutes()); }
-  else d.setHours(12, 0);
-  return d.getTime();
-}
-
-async function applyAi() {
-  const chosen = aiChanges.filter((c) => c.on);
-  if (!chosen.length) return;
-  const btn = $("#aiApply");
-  btn.disabled = true;
-  btn.textContent = "Saving…";
-  try {
-    const photos = aiAttach && chosen.some((c) => c.action === "add") ? await storePhotos(aiShots.map((s) => s.blob)) : [];
-    for (const c of chosen) {
-      const amount = c.amount_vnd * 100;
-      if (c.action === "add") await addEntry({ type: c.type, amount, note: c.note, ts: aiTs(c.date, c.time), photos });
-      else if (c.action === "update") await updateEntry({ ...c.entry, type: c.type, amount, note: c.note, ts: aiTs(c.date, c.time, c.entry.ts) });
-      else await removeEntry(c.entry);
-    }
+/* ---------- drag and drop: a dropped photo opens a new spend with it attached ---------- */
+(() => {
+  const zone = $("#dropZone");
+  let depth = 0, hideTimer;
+  const hasFiles = (e) => !!e.dataTransfer && [...e.dataTransfer.types].includes("Files");
+  const isImage = (f) => f.type.startsWith("image/") || /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(f.name);
+  const show = () => { clearTimeout(hideTimer); zone.hidden = false; zone.offsetHeight; zone.classList.add("show"); };
+  const hide = () => { depth = 0; zone.classList.remove("show"); hideTimer = setTimeout(() => (zone.hidden = true), 220); };
+  document.addEventListener("dragenter", (e) => { if (!hasFiles(e)) return; e.preventDefault(); if (depth++ === 0) show(); });
+  document.addEventListener("dragover", (e) => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = "copy"; });
+  document.addEventListener("dragleave", (e) => { if (!hasFiles(e)) return; if (--depth <= 0) hide(); });
+  document.addEventListener("drop", async (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    hide();
+    const files = [...e.dataTransfer.files].filter(isImage);
+    if (!files.length) { toast("Drop a photo to log a spend"); return; }
     haptic();
-    closeSheet($("#aiSheet"));
-    const first = keyToDate(chosen[0].date);
-    const dir = first.getFullYear() * 12 + first.getMonth() - (state.view.y * 12 + state.view.m);
-    state.view = { y: first.getFullYear(), m: first.getMonth() };
-    render(Math.sign(dir));
-    toast(`Applied ${chosen.length} change${chosen.length === 1 ? "" : "s"}`);
-  } catch (err) {
-    toast((err && err.userMessage) || "Couldn’t save the changes. Try again.");
-    aiUpdateApply();
-  }
-}
+    // add to a spend that's already open; otherwise start one (on the open day, if any)
+    if (!$("#entrySheet").classList.contains("open")) openEntry("out", state.openDay);
+    await addFiles(files);
+  });
+})();
 
-function aiClearShots() { aiShots.forEach((s) => URL.revokeObjectURL(s.url)); aiShots = []; aiChanges = []; }
-
-$("#aiBtn").addEventListener("click", () => {
-  if (!lsGet(LS_KEY, "")) {
-    openSheet($("#settingsSheet"));
-    toast("Add a Claude or Gemini API key first");
-    setTimeout(() => $("#apiKeyIn").focus({ preventScroll: true }), 450);
-    return;
-  }
-  $("#aiIn").click();
-});
-$("#aiIn").addEventListener("change", async (ev) => {
-  const files = [...ev.target.files].slice(0, 4);
-  ev.target.value = "";
-  if (!files.length) return;
-  aiClearShots();
-  for (const f of files) {
-    try { const blob = await shrink(f, 1600, 0.85); aiShots.push({ blob, url: URL.createObjectURL(blob) }); } catch {}
-  }
-  if (!aiShots.length) { toast("That image couldn’t be read."); return; }
-  aiAttach = true;
-  openSheet($("#aiSheet"));
-  runAiScan();
-});
-$("#aiApply").addEventListener("click", applyAi);
-
-$("#apiKeyIn").value = lsGet(LS_KEY, "");
-$("#apiKeyIn").addEventListener("change", () => {
-  const v = $("#apiKeyIn").value.trim();
-  if (v) {
-    lsSet(LS_KEY, v);
-    toast(/^(AIza|AQ\.|sk-ant-)/.test(v) ? `${aiName(v)} key saved` : "Saved as a Gemini key, but it doesn’t look like one");
-  }
-  else { try { localStorage.removeItem(LS_KEY); } catch {} toast("API key removed"); }
-});
+// The AI scan was removed; delete any API key it left on this device.
+try { localStorage.removeItem("wallet.apiKey"); } catch {}
 
 /* ---------- boot: follow the device clock ---------- */
 (function boot() {
